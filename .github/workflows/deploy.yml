@@ -13,6 +13,7 @@ jobs:
     steps:
       - name: CHeckout Code
         uses: actions/checkout@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -20,8 +21,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names node_app || \
+          aws ecr create-repository --repository-name node_app
+
+
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        run: aws ecr get-login-password | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
 
 
       - name: Build, tag, and push Docker image
@@ -29,3 +36,18 @@ jobs:
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/node_app:latest
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
+
+      - name: Setting up KUBECTL
+        uses: azure/setup-kubectl@v3
+
+      - name: DEploy ECR image to Kubernetes
+        run: |
+          aws eks --region ap-south-1 update-kubeconfig --name demo-cluster
+
+          #replacing image uri in depl.yml file
+
+          sed -i "s|<your_ecr_uri>|${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/nodejs-app|" deployment.yaml
+
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+          kubectl apply -f ingress.yaml
