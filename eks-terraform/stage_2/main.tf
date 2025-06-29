@@ -91,6 +91,10 @@ resource "helm_release" "alb_controller" {
       value = data.aws_eks_cluster.eks.vpc_config[0].vpc_id
     },
     {
+      name  = "installCRDs"
+      value = "true"
+    },
+    {
       name  = "serviceAccount.create"
       value = "false"
     },
