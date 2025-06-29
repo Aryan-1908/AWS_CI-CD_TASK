@@ -71,11 +71,11 @@ resource "helm_release" "alb_controller" {
   namespace  = "kube-system"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
-  version    = "1.7.1"
  
   timeout    = 500
   wait       = true
   force_update = true
+  skip_crds    = true
  
   set = [
     {
@@ -89,10 +89,6 @@ resource "helm_release" "alb_controller" {
     {
       name  = "vpcId"
       value = data.aws_eks_cluster.eks.vpc_config[0].vpc_id
-    },
-    {
-      name  = "installCRDs"
-      value = "true"
     },
     {
       name  = "serviceAccount.create"
