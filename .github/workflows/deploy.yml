@@ -46,7 +46,7 @@ jobs:
 
           #replacing image uri in depl.yml file
 
-          sed -i "s|<your_ecr_uri>|${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/nodejs-app|" deployment.yaml
+          sed -i "s|<your_ecr_uri>|${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/node_app|" deployment.yaml
 
           kubectl apply -f deployment.yaml
           kubectl apply -f service.yaml
