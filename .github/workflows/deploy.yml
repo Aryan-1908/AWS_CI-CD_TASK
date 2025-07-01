@@ -50,8 +50,6 @@ jobs:
 
           sed -i "s|<your_ecr_uri>|${{ env.IMAGE_URI }}|" deployment.yaml
 
-          cat deployment.yaml
-
           kubectl apply -f deployment.yaml
           kubectl apply -f service.yaml
           kubectl apply -f ingress.yaml
