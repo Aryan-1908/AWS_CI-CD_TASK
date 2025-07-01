@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
         - name: nodeapp
-          image: 672930000772.dkr.ecr.ap-south-1.amazonaws.com/node_app:latest
+          image: <your_ecr_uri>
+          imagePullPolicy: Always
           ports:
             - containerPort: 3005
