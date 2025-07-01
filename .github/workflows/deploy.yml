@@ -33,8 +33,9 @@ jobs:
 
       - name: Build, tag, and push Docker image
         run: |
-          IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)
+          IMAGE_TAG=${GITHUB_SHA::7}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/node_app:$IMAGE_TAG
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
@@ -47,7 +48,9 @@ jobs:
 
           #replacing image uri in depl.yml file
 
-          sed -i "s|<your_ecr_uri>|$IMAGE_URI|" deployment.yaml
+          sed -i "s|<your_ecr_uri>|${{ env.IMAGE_URI }}|" deployment.yaml
+
+          cat deployment.yaml
 
           kubectl apply -f deployment.yaml
           kubectl apply -f service.yaml
