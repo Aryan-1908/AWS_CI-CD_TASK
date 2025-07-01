@@ -33,18 +33,6 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Private Subnets
-resource "aws_subnet" "private" {
-  count             = 2
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnet_cidrs[count.index]
-  availability_zone = element(data.aws_availability_zones.available.names, count.index)
-
-  tags = {
-    Name = "eks-private-${count.index}"
-  }
-}
-
 # Route Table
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -60,6 +48,50 @@ resource "aws_route_table_association" "public" {
   count          = 2
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+# Creating  Elastic ip for NAT Gateway
+resource "aws_eip" "nat_eip"{
+  tags = {
+    Name = "nat-eip"
+  }
+}
+
+# NAT gateway
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id = aws_subnet.public[0].id
+}
+# ✅ Important: NAT Gateway must be in a public subnet to talk to the internet via Internet Gateway. adding comment for my better understanding
+
+
+# Private Subnets
+resource "aws_subnet" "private" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidrs[count.index]
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
+
+  tags = {
+    Name = "${var.env}-subnet-{count.index}"
+  }
+}
+
+# creating route table for private subnet
+resource "aws_route_table" "private_rt"{
+  vpc_id = aws_vpc.main.id
+  
+  route{
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+}
+
+# Associating RT with PRivate subnet
+resource "aws_route_table_association" "private_rt"{
+  count = 2
+  subnet_id = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private_rt.id
 }
 
 # IAM Role for EKS Cluster
@@ -131,7 +163,7 @@ resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = "eks-node-group"
   node_role_arn   = aws_iam_role.eks_node_role.arn
-  subnet_ids      = aws_subnet.public[*].id # 👈 use public subnets for now
+  subnet_ids      = aws_subnet.private[*].id 
 
   scaling_config {
     desired_size = 2
